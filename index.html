@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TechScreen — Online Technical Assessment</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --accent: #2f81f7;
+      --green: #3fb950;
+      --red: #f85149;
+      --yellow: #d29922;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', sans-serif;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* TOP NAV */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .nav-logo {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .timer-badge {
+      background: rgba(248,81,73,0.15);
+      border: 1px solid rgba(248,81,73,0.3);
+      color: var(--red);
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+    }
+    .candidate-chip {
+      background: rgba(47,129,247,0.1);
+      border: 1px solid rgba(47,129,247,0.25);
+      color: var(--accent);
+      font-size: 0.8rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+    }
+
+    /* MAIN LAYOUT */
+    .layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      flex: 1;
+      overflow: hidden;
+      height: calc(100vh - 56px);
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1.25rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+    .question-list { display: flex; flex-direction: column; gap: 0.4rem; }
+    .q-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.15s;
+      border: 1px solid transparent;
+    }
+    .q-item:hover { background: rgba(255,255,255,0.04); }
+    .q-item.active { background: rgba(47,129,247,0.1); border-color: rgba(47,129,247,0.25); }
+    .q-item.done .q-dot { background: var(--green); }
+    .q-item.active .q-dot { background: var(--accent); }
+    .q-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+    .q-name { flex: 1; }
+    .q-diff {
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-family: var(--mono);
+    }
+    .diff-easy { background: rgba(63,185,80,0.15); color: var(--green); }
+    .diff-med  { background: rgba(210,153,34,0.15); color: var(--yellow); }
+    .diff-hard { background: rgba(248,81,73,0.15); color: var(--red); }
+
+    .progress-block {}
+    .progress-bar-wrap {
+      background: var(--border);
+      border-radius: 999px;
+      height: 6px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+    .progress-text { font-size: 0.78rem; color: var(--muted); margin-top: 0.4rem; }
+
+    .info-box {
+      background: rgba(47,129,247,0.06);
+      border: 1px solid rgba(47,129,247,0.2);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .info-box strong { color: var(--text); display: block; margin-bottom: 0.3rem; }
+
+    /* MAIN AREA */
+    .main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .problem-header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+    .problem-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .problem-num {
+      background: var(--border);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+    .tab-row {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tab {
+      padding: 0.7rem 1.25rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s;
+    }
+    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+    .content-area {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+    }
+    .problem-panel {
+      padding: 1.5rem 1.75rem;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+    .problem-desc {
+      font-size: 0.9rem;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+    .problem-desc p { margin-bottom: 1rem; }
+    .problem-desc code {
+      font-family: var(--mono);
+      background: var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: var(--text);
+    }
+    .problem-desc strong { color: var(--text); }
+
+    .example-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+    .example-label { color: var(--muted); font-size: 0.75rem; margin-bottom: 0.4rem; }
+    .example-val { color: var(--green); }
+
+    .code-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .code-toolbar {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .lang-select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 5px;
+      outline: none;
+      cursor: pointer;
+    }
+    textarea#code-editor {
+      flex: 1;
+      background: var(--bg);
+      color: #a9b7c6;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      line-height: 1.7;
+      padding: 1.25rem 1.5rem;
+      border: none;
+      outline: none;
+      resize: none;
+      tab-size: 2;
+    }
+
+    .bottom-bar {
+      padding: 0.85rem 1.75rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .test-results {
+      display: flex;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-family: var(--mono);
+      color: var(--muted);
+    }
+    .btn {
+      padding: 0.55rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:active { transform: scale(0.97); }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-green {
+      background: var(--green);
+      color: #000;
+      font-weight: 600;
+    }
+    .btn-row { display: flex; gap: 0.75rem; }
+
+    /* === RICK OVERLAY === */
+    #rick-overlay {
+      position: fixed; inset: 0;
+      background: #000;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+      padding: 2rem;
+    }
+    #rick-overlay.active { opacity: 1; pointer-events: all; }
+
+    .rick-inner { max-width: 780px; width: 100%; text-align: center; }
+
+    .rick-headline {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: clamp(1.5rem, 5vw, 3.5rem);
+      color: var(--green);
+      margin-bottom: 0.4rem;
+      animation: popIn 0.5s cubic-bezier(0.22,1,0.36,1) both;
+      animation-delay: 0.3s;
+      opacity: 0;
+    }
+    .rick-sub {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 2rem;
+      animation: popIn 0.5s ease both;
+      animation-delay: 0.55s;
+      opacity: 0;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .error-banner {
+      background: rgba(63,185,80,0.08);
+      border: 1px solid rgba(63,185,80,0.3);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--green);
+      text-align: left;
+      margin-bottom: 1.5rem;
+      animation: popIn 0.5s ease both;
+      animation-delay: 0.4s;
+      opacity: 0;
+    }
+    .error-banner .err-line { color: var(--muted); }
+    .error-banner .err-line span { color: var(--green); }
+
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(63,185,80,0.2);
+      animation: popIn 0.5s ease both;
+      animation-delay: 0.7s;
+      opacity: 0;
+    }
+    .video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+
+    .btn-row-rick {
+      margin-top: 1.25rem;
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: popIn 0.5s ease both;
+      animation-delay: 0.9s;
+      opacity: 0;
+    }
+
+    /* fake "running tests" animation */
+    #fake-run {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 8888;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    #fake-run.active { opacity: 1; pointer-events: all; }
+    .run-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem 2.5rem;
+      width: 380px;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    .run-title { font-size: 1rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); }
+    .run-line {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.4rem 0;
+      color: var(--muted);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .run-line.show { opacity: 1; }
+    .run-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+    .run-dot.pass { background: var(--green); }
+    .run-dot.spin {
+      border: 2px solid var(--accent);
+      border-top-color: transparent;
+      background: none;
+      animation: dotspin 0.6s linear infinite;
+    }
+    @keyframes dotspin { to { transform: rotate(360deg); } }
+
+    /* particles */
+    .particle { position: fixed; pointer-events: none; z-index: 9998; font-size: 1.2rem; animation: fall linear forwards; }
+    @keyframes fall { 0%{ transform: translateY(-10vh) rotate(0); opacity:1; } 100%{ transform: translateY(110vh) rotate(720deg); opacity:0; } }
+
+    @media (max-width: 768px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .content-area { grid-template-columns: 1fr; }
+      .problem-panel { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">⌨ Tech<span>Screen</span></div>
+  <div class="nav-right">
+    <span class="candidate-chip">candidate_session_8472</span>
+    <span class="timer-badge" id="nav-timer">45:00</span>
+  </div>
+</nav>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div>
+      <div class="section-label">Questions</div>
+      <div class="question-list">
+        <div class="q-item done" onclick="setQ(0)">
+          <div class="q-dot"></div>
+          <span class="q-name">Two Sum</span>
+          <span class="q-diff diff-easy">Easy</span>
+        </div>
+        <div class="q-item done" onclick="setQ(1)">
+          <div class="q-dot"></div>
+          <span class="q-name">Valid Parentheses</span>
+          <span class="q-diff diff-easy">Easy</span>
+        </div>
+        <div class="q-item active" onclick="setQ(2)">
+          <div class="q-dot"></div>
+          <span class="q-name">Rick's Algorithm</span>
+          <span class="q-diff diff-med">Medium</span>
+        </div>
+        <div class="q-item" onclick="setQ(3)">
+          <div class="q-dot"></div>
+          <span class="q-name">LRU Cache</span>
+          <span class="q-diff diff-hard">Hard</span>
+        </div>
+        <div class="q-item" onclick="setQ(4)">
+          <div class="q-dot"></div>
+          <span class="q-name">Graph Traversal</span>
+          <span class="q-diff diff-hard">Hard</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-block">
+      <div class="section-label">Your Progress</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="prog-bar" style="width:40%"></div></div>
+      <div class="progress-text" id="prog-text">2 of 5 complete</div>
+    </div>
+
+    <div class="info-box">
+      <strong>📋 Assessment Info</strong>
+      This session is being recorded and reviewed by our engineering team. Submit all 5 questions before time expires. Good luck!
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="problem-header">
+      <div class="problem-title">
+        <span class="problem-num">#3</span>
+        Rick's Algorithm
+      </div>
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        <span style="font-size:0.8rem;color:var(--muted);">Medium</span>
+        <span style="background:rgba(210,153,34,0.15);color:var(--yellow);font-size:0.75rem;padding:0.2rem 0.5rem;border-radius:4px;font-family:var(--mono);">⭐ 1,204 solved</span>
+      </div>
+    </div>
+
+    <div class="tab-row">
+      <div class="tab active">Description</div>
+      <div class="tab">Hints</div>
+      <div class="tab">Submissions</div>
+    </div>
+
+    <div class="content-area">
+      <!-- PROBLEM DESCRIPTION -->
+      <div class="problem-panel">
+        <div class="problem-desc">
+          <p>Given an integer array <code>nums</code> and an integer <code>k</code>, implement <strong>Rick's Algorithm</strong> which finds the maximum sum of any contiguous subarray of length exactly <code>k</code>.</p>
+
+          <p>Your solution must run in <strong>O(n)</strong> time. A naive O(n·k) solution will fail the performance test cases.</p>
+
+          <p><strong>Constraints:</strong></p>
+          <p>• <code>1 ≤ k ≤ nums.length ≤ 10⁵</code><br>
+             • <code>-10⁴ ≤ nums[i] ≤ 10⁴</code></p>
+
+          <div class="example-block">
+            <div class="example-label">Example 1</div>
+            <div><span style="color:var(--muted)">Input:  </span><span class="example-val">nums = [2,1,5,1,3,2], k = 3</span></div>
+            <div><span style="color:var(--muted)">Output: </span><span class="example-val">9</span></div>
+            <div style="color:var(--muted);font-size:0.78rem;margin-top:0.4rem;">Explanation: [5,1,3] has the maximum sum = 9</div>
+          </div>
+
+          <div class="example-block">
+            <div class="example-label">Example 2</div>
+            <div><span style="color:var(--muted)">Input:  </span><span class="example-val">nums = [-1,4,2,1], k = 2</span></div>
+            <div><span style="color:var(--muted)">Output: </span><span class="example-val">6</span></div>
+          </div>
+
+          <p style="margin-top:1rem;"><strong>Note:</strong> This question was contributed by <em>R. Astley</em>, a senior engineer known for never letting people down. His algorithm is also notable for never giving up.</p>
+        </div>
+      </div>
+
+      <!-- CODE EDITOR -->
+      <div class="code-panel">
+        <div class="code-toolbar">
+          <select class="lang-select">
+            <option>Python 3</option>
+            <option>JavaScript</option>
+            <option>Java</option>
+            <option>C++</option>
+            <option>Go</option>
+          </select>
+          <span style="font-size:0.75rem;color:var(--muted);margin-left:auto;">Auto-saved</span>
+        </div>
+        <textarea id="code-editor" spellcheck="false">def max_sum_subarray(nums: list[int], k: int) -> int:
+    # Your solution here
+    # Hint: Think sliding window 🪟
+    
+    window_sum = sum(nums[:k])
+    max_sum = window_sum
+    
+    for i in range(k, len(nums)):
+        window_sum += nums[i] - nums[i - k]
+        max_sum = max(max_sum, window_sum)
+    
+    return max_sum
+</textarea>
+      </div>
+    </div>
+
+    <!-- BOTTOM BAR -->
+    <div class="bottom-bar">
+      <div class="test-results" id="test-results">
+        <span style="color:var(--green);">✓ TC1</span>
+        <span style="color:var(--green);">✓ TC2</span>
+        <span style="color:var(--muted);">○ TC3</span>
+        <span style="color:var(--muted);">○ TC4</span>
+        <span style="color:var(--muted);">○ TC5 (hidden)</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="runTests()">▶ Run Tests</button>
+        <button class="btn btn-green" onclick="submitSolution()">Submit Solution →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FAKE RUNNING OVERLAY -->
+<div id="fake-run">
+  <div class="run-card">
+    <div class="run-title">Running test cases...</div>
+    <div class="run-line" id="rl0"><div class="run-dot pass"></div>Test case 1 — PASSED (4ms)</div>
+    <div class="run-line" id="rl1"><div class="run-dot pass"></div>Test case 2 — PASSED (3ms)</div>
+    <div class="run-line" id="rl2"><div class="run-dot"></div>Test case 3 — running...</div>
+    <div class="run-line" id="rl3"><div class="run-dot"></div>Test case 4 — running...</div>
+    <div class="run-line" id="rl4"><div class="run-dot"></div>Test case 5 (hidden) — running...</div>
+  </div>
+</div>
+
+<!-- RICK OVERLAY -->
+<div id="rick-overlay">
+  <div class="rick-inner">
+    <div class="error-banner">
+      <div class="err-line">$ running final_eval.py --candidate=8472 --question=3</div>
+      <div class="err-line">  <span>✓ all_tests_passed: True</span></div>
+      <div class="err-line">  <span>✓ time_complexity: O(n)</span></div>
+      <div class="err-line">  <span>✓ hidden_test_case: True</span></div>
+      <div style="margin-top:0.5rem;">  <span style="color:#fff;">🎉 Congratulations... but wait.</span></div>
+    </div>
+    <div class="rick-headline">// never gonna give you up 🎸</div>
+    <p class="rick-sub">Your code was perfect. Unfortunately, so was this trap. — R. Astley, Senior Engineer</p>
+    <div class="video-wrap">
+      <iframe id="rick-frame" src="" title="Never Gonna Give You Up" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+    <div class="btn-row-rick">
+      <button class="btn btn-ghost" onclick="copyLink()">🔗 Send to another candidate</button>
+      <button class="btn btn-primary" onclick="goBack()">← Back to assessment</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // === Nav countdown ===
+  let secs = 45 * 60;
+  const navTimer = document.getElementById('nav-timer');
+  setInterval(() => {
+    secs = Math.max(0, secs - 1);
+    const m = String(Math.floor(secs / 60)).padStart(2,'0');
+    const s = String(secs % 60).padStart(2,'0');
+    navTimer.textContent = m + ':' + s;
+    if (secs < 300) navTimer.style.background = 'rgba(248,81,73,0.25)';
+  }, 1000);
+
+  function setQ(i) {
+    document.querySelectorAll('.q-item').forEach((el,idx) => {
+      el.classList.toggle('active', idx === i);
+    });
+  }
+
+  function runTests() {
+    const fr = document.getElementById('fake-run');
+    fr.classList.add('active');
+    // show lines with delays
+    ['rl0','rl1','rl2','rl3','rl4'].forEach((id, i) => {
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        el.classList.add('show');
+        if (i >= 2) {
+          const dot = el.querySelector('.run-dot');
+          dot.classList.add('spin');
+        }
+      }, i * 180);
+    });
+    setTimeout(() => {
+      fr.classList.remove('active');
+      ['rl0','rl1','rl2','rl3','rl4'].forEach(id => {
+        document.getElementById(id).classList.remove('show');
+        const dot = document.getElementById(id).querySelector('.run-dot');
+        dot.classList.remove('spin');
+      });
+      document.getElementById('test-results').innerHTML =
+        '<span style="color:var(--green);">✓ TC1</span>' +
+        '<span style="color:var(--green);">✓ TC2</span>' +
+        '<span style="color:var(--green);">✓ TC3</span>' +
+        '<span style="color:var(--muted);">○ TC4</span>' +
+        '<span style="color:var(--muted);">○ TC5 (hidden)</span>';
+    }, 2200);
+  }
+
+  function submitSolution() {
+    const fr = document.getElementById('fake-run');
+    fr.classList.add('active');
+    const lines = ['rl0','rl1','rl2','rl3','rl4'];
+    lines.forEach((id, i) => {
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        el.classList.add('show');
+        const dot = el.querySelector('.run-dot');
+        if (i < 2) {
+          dot.classList.add('pass');
+        } else {
+          dot.classList.add('spin');
+        }
+      }, i * 300);
+    });
+    // after all pass, trigger rick roll
+    setTimeout(() => {
+      lines.slice(2).forEach(id => {
+        const dot = document.getElementById(id).querySelector('.run-dot');
+        dot.classList.remove('spin');
+        dot.classList.add('pass');
+      });
+    }, 1800);
+    setTimeout(() => {
+      fr.classList.remove('active');
+      triggerRickRoll();
+    }, 2600);
+  }
+
+  function triggerRickRoll() {
+    const overlay = document.getElementById('rick-overlay');
+    overlay.classList.add('active');
+    document.getElementById('rick-frame').src = 'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0';
+    spawnParticles();
+  }
+
+  const emojis = ['🎸','🕺','💃','🎵','🎶','✓','👀','🔥'];
+  function spawnParticles() {
+    for (let i = 0; i < 25; i++) {
+      setTimeout(makeParticle, i * 150);
+    }
+    setInterval(makeParticle, 500);
+  }
+  function makeParticle() {
+    const p = document.createElement('span');
+    p.className = 'particle';
+    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.animationDuration = (2.5 + Math.random() * 3) + 's';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 5500);
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => alert('Link copied! Send it to your next victim 😈'))
+      .catch(() => alert('Copy this URL: ' + window.location.href));
+  }
+  function goBack() {
+    document.getElementById('rick-overlay').classList.remove('active');
+    document.getElementById('rick-frame').src = '';
+  }
+</script>
+</body>
+</html>
