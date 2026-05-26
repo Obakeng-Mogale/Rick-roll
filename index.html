@@ -4,7 +4,13 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>TechScreen — Online Technical Assessment</title>
+  
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-vsc-dark-plus.min.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -117,7 +123,6 @@
     }
     .q-item:hover { background: rgba(255,255,255,0.04); }
     .q-item.active { background: rgba(47,129,247,0.1); border-color: rgba(47,129,247,0.25); }
-    .q-item.done .q-dot { background: var(--green); }
     .q-item.active .q-dot { background: var(--accent); }
     .q-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
     .q-name { flex: 1; }
@@ -127,9 +132,7 @@
       border-radius: 4px;
       font-family: var(--mono);
     }
-    .diff-easy { background: rgba(63,185,80,0.15); color: var(--green); }
     .diff-med  { background: rgba(210,153,34,0.15); color: var(--yellow); }
-    .diff-hard { background: rgba(248,81,73,0.15); color: var(--red); }
 
     .progress-block {}
     .progress-bar-wrap {
@@ -143,7 +146,7 @@
       height: 100%;
       background: linear-gradient(90deg, var(--accent), var(--green));
       border-radius: 999px;
-      width: 0%;
+      width: 100%;
       transition: width 0.4s ease;
     }
     .progress-text { font-size: 0.78rem; color: var(--muted); margin-top: 0.4rem; }
@@ -249,7 +252,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: var(--bg);
+      background: #1e1e1e; /* VS Code dark background */
     }
     .code-toolbar {
       padding: 0.6rem 1rem;
@@ -271,18 +274,51 @@
       outline: none;
       cursor: pointer;
     }
-    textarea#code-editor {
+
+    /* === VS CODE EDITOR STYLES === */
+    .editor-container {
+      position: relative;
       flex: 1;
-      background: var(--bg);
-      color: #a9b7c6;
-      font-family: var(--mono);
-      font-size: 0.85rem;
-      line-height: 1.7;
+      overflow: hidden;
+      background: #1e1e1e;
+    }
+    #code-editor {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100%; height: 100%;
       padding: 1.25rem 1.5rem;
+      font-family: 'JetBrains Mono', monospace, Consolas;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      background: transparent;
+      color: transparent; /* Makes raw text invisible, only shows highlighted block behind it */
+      caret-color: #d4d4d4;
       border: none;
       outline: none;
       resize: none;
-      tab-size: 2;
+      white-space: pre;
+      z-index: 2;
+      overflow: auto;
+    }
+    #code-output-container {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      overflow: hidden;
+    }
+    #code-output-container pre {
+      margin: 0 !important;
+      padding: 1.25rem 1.5rem !important;
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+    }
+    #code-output {
+      font-family: 'JetBrains Mono', monospace, Consolas;
+      font-size: 0.85rem;
+      line-height: 1.5;
     }
 
     .bottom-bar {
@@ -467,7 +503,6 @@
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
   <div class="nav-logo">⌨ Tech<span>Screen</span></div>
   <div class="nav-right">
@@ -476,59 +511,36 @@
   </div>
 </nav>
 
-<!-- LAYOUT -->
 <div class="layout">
 
-  <!-- SIDEBAR -->
   <div class="sidebar">
     <div>
       <div class="section-label">Questions</div>
       <div class="question-list">
-        <div class="q-item done" onclick="setQ(0)">
-          <div class="q-dot"></div>
-          <span class="q-name">Two Sum</span>
-          <span class="q-diff diff-easy">Easy</span>
-        </div>
-        <div class="q-item done" onclick="setQ(1)">
-          <div class="q-dot"></div>
-          <span class="q-name">Valid Parentheses</span>
-          <span class="q-diff diff-easy">Easy</span>
-        </div>
-        <div class="q-item active" onclick="setQ(2)">
+        <div class="q-item active">
           <div class="q-dot"></div>
           <span class="q-name">Rick's Algorithm</span>
           <span class="q-diff diff-med">Medium</span>
-        </div>
-        <div class="q-item" onclick="setQ(3)">
-          <div class="q-dot"></div>
-          <span class="q-name">LRU Cache</span>
-          <span class="q-diff diff-hard">Hard</span>
-        </div>
-        <div class="q-item" onclick="setQ(4)">
-          <div class="q-dot"></div>
-          <span class="q-name">Graph Traversal</span>
-          <span class="q-diff diff-hard">Hard</span>
         </div>
       </div>
     </div>
 
     <div class="progress-block">
       <div class="section-label">Your Progress</div>
-      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="prog-bar" style="width:40%"></div></div>
-      <div class="progress-text" id="prog-text">2 of 5 complete</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="prog-bar"></div></div>
+      <div class="progress-text" id="prog-text">1 of 1 complete</div>
     </div>
 
     <div class="info-box">
       <strong>📋 Assessment Info</strong>
-      This session is being recorded and reviewed by our engineering team. Submit all 5 questions before time expires. Good luck!
+      This session is being recorded and reviewed by our engineering team. Submit your question before time expires. Good luck!
     </div>
   </div>
 
-  <!-- MAIN -->
   <div class="main">
     <div class="problem-header">
       <div class="problem-title">
-        <span class="problem-num">#3</span>
+        <span class="problem-num">#1</span>
         Rick's Algorithm
       </div>
       <div style="display:flex;gap:0.5rem;align-items:center;">
@@ -544,7 +556,6 @@
     </div>
 
     <div class="content-area">
-      <!-- PROBLEM DESCRIPTION -->
       <div class="problem-panel">
         <div class="problem-desc">
           <p>Given an integer array <code>nums</code> and an integer <code>k</code>, implement <strong>Rick's Algorithm</strong> which finds the maximum sum of any contiguous subarray of length exactly <code>k</code>.</p>
@@ -572,7 +583,6 @@
         </div>
       </div>
 
-      <!-- CODE EDITOR -->
       <div class="code-panel">
         <div class="code-toolbar">
           <select class="lang-select">
@@ -584,7 +594,8 @@
           </select>
           <span style="font-size:0.75rem;color:var(--muted);margin-left:auto;">Auto-saved</span>
         </div>
-        <textarea id="code-editor" spellcheck="false">def max_sum_subarray(nums: list[int], k: int) -> int:
+        <div class="editor-container">
+          <textarea id="code-editor" spellcheck="false" wrap="off">def max_sum_subarray(nums: list[int], k: int) -> int:
     # Your solution here
     # Hint: Think sliding window 🪟
     
@@ -595,12 +606,14 @@
         window_sum += nums[i] - nums[i - k]
         max_sum = max(max_sum, window_sum)
     
-    return max_sum
-</textarea>
+    return max_sum</textarea>
+          <div id="code-output-container">
+            <pre><code id="code-output" class="language-python"></code></pre>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- BOTTOM BAR -->
     <div class="bottom-bar">
       <div class="test-results" id="test-results">
         <span style="color:var(--green);">✓ TC1</span>
@@ -617,7 +630,6 @@
   </div>
 </div>
 
-<!-- FAKE RUNNING OVERLAY -->
 <div id="fake-run">
   <div class="run-card">
     <div class="run-title">Running test cases...</div>
@@ -629,11 +641,10 @@
   </div>
 </div>
 
-<!-- RICK OVERLAY -->
 <div id="rick-overlay">
   <div class="rick-inner">
     <div class="error-banner">
-      <div class="err-line">$ running final_eval.py --candidate=8472 --question=3</div>
+      <div class="err-line">$ running final_eval.py --candidate=8472 --question=1</div>
       <div class="err-line">  <span>✓ all_tests_passed: True</span></div>
       <div class="err-line">  <span>✓ time_complexity: O(n)</span></div>
       <div class="err-line">  <span>✓ hidden_test_case: True</span></div>
@@ -652,6 +663,28 @@
 </div>
 
 <script>
+  // === VS Code Editor Logic ===
+  const editor = document.getElementById('code-editor');
+  const output = document.getElementById('code-output');
+  const outputContainer = document.getElementById('code-output-container');
+
+  function updateHighlighting() {
+    let code = editor.value;
+    code = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    output.innerHTML = code;
+    Prism.highlightElement(output);
+  }
+
+  function syncScroll() {
+    outputContainer.scrollTop = editor.scrollTop;
+    outputContainer.scrollLeft = editor.scrollLeft;
+  }
+
+  editor.addEventListener('input', updateHighlighting);
+  editor.addEventListener('scroll', syncScroll);
+  // Initial highlight call
+  updateHighlighting();
+
   // === Nav countdown ===
   let secs = 45 * 60;
   const navTimer = document.getElementById('nav-timer');
@@ -662,12 +695,6 @@
     navTimer.textContent = m + ':' + s;
     if (secs < 300) navTimer.style.background = 'rgba(248,81,73,0.25)';
   }, 1000);
-
-  function setQ(i) {
-    document.querySelectorAll('.q-item').forEach((el,idx) => {
-      el.classList.toggle('active', idx === i);
-    });
-  }
 
   function runTests() {
     const fr = document.getElementById('fake-run');
@@ -732,8 +759,8 @@
   function triggerRickRoll() {
     const overlay = document.getElementById('rick-overlay');
     overlay.classList.add('active');
-    document.getElementById('rick-frame').src =
-          'https://www.youtube.com/watch?v=xvFZjo5PgG0?autoplay=1&rel=0';
+    // Using youtube-nocookie to bypass most ads
+    document.getElementById('rick-frame').src = 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3';
     spawnParticles();
   }
 
