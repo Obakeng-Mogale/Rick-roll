@@ -73,7 +73,6 @@
       padding: 0.3rem 0.75rem;
       border-radius: 6px;
     }
-
     .candidate-chip {
       background: rgba(47,129,247,0.1);
       border: 1px solid rgba(47,129,247,0.25);
@@ -253,7 +252,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: #1e1e1e; /* VS Code dark background */
+      background: #1e1e1e;
     }
     .code-toolbar {
       padding: 0.6rem 1rem;
@@ -292,7 +291,7 @@
       font-size: 0.85rem;
       line-height: 1.5;
       background: transparent;
-      color: transparent; /* Makes raw text invisible, only shows highlighted block behind it */
+      color: transparent;
       caret-color: #d4d4d4;
       border: none;
       outline: none;
@@ -447,7 +446,6 @@
       opacity: 0;
     }
 
-    /* fake "running tests" animation */
     #fake-run {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.85);
@@ -490,7 +488,6 @@
     }
     @keyframes dotspin { to { transform: rotate(360deg); } }
 
-    /* particles */
     .particle { position: fixed; pointer-events: none; z-index: 9998; font-size: 1.2rem; animation: fall linear forwards; }
     @keyframes fall { 0%{ transform: translateY(-10vh) rotate(0); opacity:1; } 100%{ transform: translateY(110vh) rotate(720deg); opacity:0; } }
 
@@ -513,7 +510,6 @@
 </nav>
 
 <div class="layout">
-
   <div class="sidebar">
     <div>
       <div class="section-label">Questions</div>
@@ -560,9 +556,7 @@
       <div class="problem-panel">
         <div class="problem-desc">
           <p>Given an integer array <code>nums</code> and an integer <code>k</code>, implement <strong>Rick's Algorithm</strong> which finds the maximum sum of any contiguous subarray of length exactly <code>k</code>.</p>
-
           <p>Your solution must run in <strong>O(n)</strong> time. A naive O(n·k) solution will fail the performance test cases.</p>
-
           <p><strong>Constraints:</strong></p>
           <p>• <code>1 ≤ k ≤ nums.length ≤ 10⁵</code><br>
              • <code>-10⁴ ≤ nums[i] ≤ 10⁴</code></p>
@@ -579,7 +573,6 @@
             <div><span style="color:var(--muted)">Input:  </span><span class="example-val">nums = [-1,4,2,1], k = 2</span></div>
             <div><span style="color:var(--muted)">Output: </span><span class="example-val">6</span></div>
           </div>
-
           <p style="margin-top:1rem;"><strong>Note:</strong> This question was contributed by <em>R. Astley</em>, a senior engineer known for never letting people down. His algorithm is also notable for never giving up.</p>
         </div>
       </div>
@@ -654,7 +647,7 @@
     <div class="rick-headline">// never gonna give you up 🎸</div>
     <p class="rick-sub">Your code was perfect. Unfortunately, so was this trap. — R. Astley, Senior Engineer</p>
     <div class="video-wrap">
-      <iframe id="rick-frame" src="" title="Never Gonna Give You Up" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      <iframe id="rick-frame" src="" title="Never Gonna Give You Up" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
     <div class="btn-row-rick">
       <button class="btn btn-ghost" onclick="copyLink()">🔗 Send to another candidate</button>
@@ -683,7 +676,6 @@
 
   editor.addEventListener('input', updateHighlighting);
   editor.addEventListener('scroll', syncScroll);
-  // Initial highlight call
   updateHighlighting();
 
   // === Nav countdown ===
@@ -700,7 +692,6 @@
   function runTests() {
     const fr = document.getElementById('fake-run');
     fr.classList.add('active');
-    // show lines with delays
     ['rl0','rl1','rl2','rl3','rl4'].forEach((id, i) => {
       setTimeout(() => {
         const el = document.getElementById(id);
@@ -743,7 +734,6 @@
         }
       }, i * 300);
     });
-    // after all pass, trigger rick roll
     setTimeout(() => {
       lines.slice(2).forEach(id => {
         const dot = document.getElementById(id).querySelector('.run-dot');
@@ -760,7 +750,7 @@
   function triggerRickRoll() {
     const overlay = document.getElementById('rick-overlay');
     overlay.classList.add('active');
-    // Using youtube-nocookie to bypass most ads
+    // Using explicit embed routing with fallback clean formatting
     document.getElementById('rick-frame').src = 'https://www.youtube.com/embed/xvFZjo5PgG0?autoplay=1&rel=0';
     spawnParticles();
   }
